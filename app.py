@@ -204,33 +204,85 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         
         if user:
-            # Generate password reset token
-            token = serializer.dumps(user.email, salt='password-reset-salt')
+            # Generate a 6-digit PIN code for password reset
+            reset_pin = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
             
-            # Store token and expiry in database
-            user.reset_token = token
-            user.reset_token_expiry = datetime.utcnow() + timedelta(hours=24)
+            # Hash the PIN before storing it
+            hashed_pin = generate_password_hash(reset_pin)
+            
+            # Store PIN hash and expiry in database
+            user.reset_token = hashed_pin
+            user.reset_token_expiry = datetime.utcnow() + timedelta(minutes=30)
             db.session.commit()
             
-            # In a real application, send an email with reset link
-            reset_url = url_for('reset_password', token=token, _external=True)
-            flash(f'Password reset link: {reset_url}')
+            # For a real application, this PIN would be sent via email
+            # For demo purposes, we'll display it on screen
+            flash(f'Your password reset PIN is: {reset_pin}', 'success')
+            flash('This PIN is valid for 30 minutes. Use it to reset your password.', 'info')
             
-            # For demo purposes, display the token
-            flash(f'Reset token: {token}')
-            flash('A password reset link has been sent to your email')
+            # Redirect to reset password page where user can enter PIN
+            return redirect(url_for('reset_password_with_pin', email=email))
         else:
             # Don't reveal if email exists or not
-            flash('If your email is registered, you will receive a password reset link')
+            flash('If your email is registered, you will receive a password reset PIN', 'info')
+            # Still redirect to avoid revealing if the email exists through behavior
+            return redirect(url_for('reset_password_with_pin', email=email))
     
     return render_template('forgot_password.html')
 
 
+@app.route('/reset-password-with-pin', methods=['GET', 'POST'])
+def reset_password_with_pin():
+    """Handle password reset using PIN code"""
+    email = request.args.get('email', '')
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        pin = request.form.get('pin')
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate the input
+        if not all([email, pin, new_password, confirm_password]):
+            flash('All fields are required', 'danger')
+            return render_template('reset_password_pin.html', email=email)
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('reset_password_pin.html', email=email)
+        
+        # Find the user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not user.reset_token or user.reset_token_expiry < datetime.utcnow():
+            flash('Invalid or expired PIN code', 'danger')
+            return render_template('reset_password_pin.html', email=email)
+        
+        # Verify the PIN
+        if check_password_hash(user.reset_token, pin):
+            # Update user's password
+            user.set_password(new_password)
+            
+            # Clear reset token
+            user.reset_token = None
+            user.reset_token_expiry = None
+            
+            db.session.commit()
+            
+            flash('Your password has been updated. You can now log in with your new password', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Invalid PIN code', 'danger')
+            return render_template('reset_password_pin.html', email=email)
+    
+    return render_template('reset_password_pin.html', email=email)
+
+
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    """Handle password reset using token"""
+    """Handle password reset using token (legacy method)"""
     try:
-        # Find user with this token
+        # Find user with this token (this is kept for backward compatibility)
         user = User.query.filter_by(reset_token=token).first()
         
         if not user or user.reset_token_expiry < datetime.utcnow():
