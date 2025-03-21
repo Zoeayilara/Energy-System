@@ -148,15 +148,15 @@
                                     <label class="form-label">Theme</label>
                                     <div class="d-flex gap-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="theme" id="lightTheme" value="light" checked>
+                                            <input class="form-check-input" type="radio" name="theme" id="lightTheme" value="light" {% if session.get('theme') != 'dark' and session.get('theme') != 'system' %}checked{% endif %}>
                                             <label class="form-check-label" for="lightTheme">Light</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="theme" id="darkTheme" value="dark">
+                                            <input class="form-check-input" type="radio" name="theme" id="darkTheme" value="dark" {% if session.get('theme') == 'dark' %}checked{% endif %}>
                                             <label class="form-check-label" for="darkTheme">Dark</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="theme" id="systemTheme" value="system">
+                                            <input class="form-check-input" type="radio" name="theme" id="systemTheme" value="system" {% if session.get('theme') == 'system' %}checked{% endif %}>
                                             <label class="form-check-label" for="systemTheme">System Default</label>
                                         </div>
                                     </div>

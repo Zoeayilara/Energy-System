@@ -457,14 +457,19 @@ def settings():
             flash('Notification settings updated successfully')
             
         elif setting_type == 'display':
-            # In a real app, you would save these preferences to a user settings table
+            # Store theme preference in session for demo purposes
+            # In a production app, this would be stored in the database
             theme = request.form.get('theme')
             chart_color_scheme = request.form.get('chart_color_scheme')
             dashboard_layout = request.form.get('dashboard_layout')
             default_timeframe = request.form.get('default_timeframe')
             
-            # Here we'd save these settings to the database
-            # For demo purposes, we'll just acknowledge the change
+            # Store in session so it persists across requests
+            session['theme'] = theme
+            session['chart_color_scheme'] = chart_color_scheme
+            session['dashboard_layout'] = dashboard_layout
+            session['default_timeframe'] = default_timeframe
+            
             flash(f'Display settings updated successfully. Theme set to {theme}.')
         
         return redirect(url_for('settings'))

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="{{ session.get('theme', 'light') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,10 +14,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        /* Dark mode overrides */
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #121212;
+            --bs-body-color: #e0e0e0;
+        }
+        [data-bs-theme="dark"] .card {
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #1e1e1e !important;
+        }
+        [data-bs-theme="dark"] .text-muted {
+            color: #adb5bd !important;
+        }
+        [data-bs-theme="dark"] .border-light {
+            border-color: #333 !important;
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<body class="{% if session.get('theme') == 'dark' %}bg-dark text-light{% else %}bg-light{% endif %}">
+    <nav class="navbar navbar-expand-lg {% if session.get('theme') == 'dark' %}navbar-dark bg-dark{% else %}navbar-dark bg-dark{% endif %}">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
                 <span data-feather="zap" class="me-2"></span>
