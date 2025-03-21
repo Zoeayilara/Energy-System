@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <h2 class="mb-4">Energy Dashboard</h2>
+            <p class="text-muted">Welcome back, {{ current_user.username }}! Here's your facility's energy summary.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Energy Production Card -->
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Energy Production</h5>
+                        <span data-feather="zap" class="text-primary"></span>
+                    </div>
+                    {% if latest_data %}
+                    <h2 class="display-5 fw-bold text-primary">{{ latest_data.energy_produced }} kWh</h2>
+                    {% else %}
+                    <h2 class="display-5 fw-bold text-primary">-- kWh</h2>
+                    {% endif %}
+                    <p class="text-muted">Current solar energy production</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Energy Consumption Card -->
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Energy Consumption</h5>
+                        <span data-feather="activity" class="text-danger"></span>
+                    </div>
+                    {% if latest_data %}
+                    <h2 class="display-5 fw-bold text-danger">{{ latest_data.energy_consumed }} kWh</h2>
+                    {% else %}
+                    <h2 class="display-5 fw-bold text-danger">-- kWh</h2>
+                    {% endif %}
+                    <p class="text-muted">Current facility consumption</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Efficiency Card -->
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Efficiency</h5>
+                        <span data-feather="bar-chart-2" class="text-success"></span>
+                    </div>
+                    {% if latest_data %}
+                    <h2 class="display-5 fw-bold text-success">{{ latest_data.efficiency }}%</h2>
+                    {% else %}
+                    <h2 class="display-5 fw-bold text-success">--%</h2>
+                    {% endif %}
+                    <p class="text-muted">Current system efficiency</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Card -->
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">System Load</h5>
+                        <span data-feather="cpu" class="text-warning"></span>
+                    </div>
+                    {% if latest_data %}
+                    <h2 class="display-5 fw-bold text-warning">{{ latest_data.current_load }}%</h2>
+                    {% else %}
+                    <h2 class="display-5 fw-bold text-warning">--%</h2>
+                    {% endif %}
+                    <p class="text-muted">Current system load</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Energy Consumption & Production (Last 24 Hours)</h5>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Recommendations</h5>
+                        <span data-feather="cpu" class="text-primary"></span>
+                    </div>
+                    
+                    {% if recommendations %}
+                        {% for recommendation in recommendations %}
+                        <div class="recommendation {{ recommendation.type }} mb-3 p-3 rounded">
+                            <div class="d-flex align-items-start">
+                                {% if recommendation.type == 'warning' %}
+                                <span data-feather="alert-triangle" class="me-2 text-warning"></span>
+                                {% elif recommendation.type == 'alert' %}
+                                <span data-feather="alert-circle" class="me-2 text-danger"></span>
+                                {% elif recommendation.type == 'critical' %}
+                                <span data-feather="alert-octagon" class="me-2 text-danger"></span>
+                                {% else %}
+                                <span data-feather="info" class="me-2 text-info"></span>
+                                {% endif %}
+                                <p class="mb-0">{{ recommendation.message }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <span data-feather="info" style="width: 48px; height: 48px" class="text-muted mb-3"></span>
+                            <p>No recommendations available yet. Check back later for AI-powered insights.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Efficiency Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">System Efficiency Trend</h5>
+                    <div class="chart-container" style="position: relative; height: 250px;">
+                        <canvas id="efficiencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">System Load Trend</h5>
+                    <div class="chart-container" style="position: relative; height: 250px;">
+                        <canvas id="loadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Facility Information -->
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Facility Information</h5>
+                    
+                    {% if facility %}
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <p class="text-muted mb-1">Facility Name</p>
+                            <p class="fw-bold mb-0">{{ facility.name }}</p>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <p class="text-muted mb-1">Location</p>
+                            <p class="fw-bold mb-0">{{ facility.location }}</p>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <p class="text-muted mb-1">Capacity</p>
+                            <p class="fw-bold mb-0">{{ facility.capacity }} kW</p>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <p class="text-muted mb-1">Solar Panels</p>
+                            <p class="fw-bold mb-0">{{ facility.solar_panels }} panels</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p>No facility information available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Feather icons
+        feather.replace();
+        
+        // Set up the Energy Chart
+        const energyChartCtx = document.getElementById('energyChart').getContext('2d');
+        const energyChart = new Chart(energyChartCtx, {
+            type: 'line',
+            data: {
+                labels: {{ timestamps|tojson }},
+                datasets: [
+                    {
+                        label: 'Energy Production (kWh)',
+                        data: {{ production|tojson }},
+                        backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Energy Consumption (kWh)',
+                        data: {{ consumption|tojson }},
+                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Energy (kWh)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+        
+        // Set up the Efficiency Chart
+        const efficiencyChartCtx = document.getElementById('efficiencyChart').getContext('2d');
+        const efficiencyChart = new Chart(efficiencyChartCtx, {
+            type: 'line',
+            data: {
+                labels: {{ timestamps|tojson }},
+                datasets: [
+                    {
+                        label: 'Efficiency (%)',
+                        data: {{ efficiency|tojson }},
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Efficiency (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Set up the Load Chart
+        const loadChartCtx = document.getElementById('loadChart').getContext('2d');
+        const loadChart = new Chart(loadChartCtx, {
+            type: 'line',
+            data: {
+                labels: {{ timestamps|tojson }},
+                datasets: [
+                    {
+                        label: 'System Load (%)',
+                        data: {{ load|tojson }},
+                        backgroundColor: 'rgba(241, 196, 15, 0.2)',
+                        borderColor: 'rgba(241, 196, 15, 1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Load (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
