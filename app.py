@@ -433,11 +433,42 @@ def profile():
     return render_template('profile.html')
 
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     """Render application settings page"""
     facility = Facility.query.first()
+    
+    if request.method == 'POST':
+        setting_type = request.form.get('setting_type')
+        
+        if setting_type == 'facility':
+            # Update facility settings
+            facility.name = request.form.get('facility_name', facility.name)
+            facility.location = request.form.get('facility_location', facility.location)
+            facility.capacity = float(request.form.get('facility_capacity', facility.capacity))
+            facility.solar_panels = int(request.form.get('facility_solar_panels', facility.solar_panels))
+            
+            db.session.commit()
+            flash('Facility settings updated successfully')
+            
+        elif setting_type == 'notifications':
+            # In a real app, you would save these preferences to a user settings table
+            flash('Notification settings updated successfully')
+            
+        elif setting_type == 'display':
+            # In a real app, you would save these preferences to a user settings table
+            theme = request.form.get('theme')
+            chart_color_scheme = request.form.get('chart_color_scheme')
+            dashboard_layout = request.form.get('dashboard_layout')
+            default_timeframe = request.form.get('default_timeframe')
+            
+            # Here we'd save these settings to the database
+            # For demo purposes, we'll just acknowledge the change
+            flash(f'Display settings updated successfully. Theme set to {theme}.')
+        
+        return redirect(url_for('settings'))
+    
     return render_template('settings.html', facility=facility)
 
 
