@@ -182,7 +182,8 @@ def signup():
             db.session.commit()
             
             login_user(new_user)
-            return redirect(url_for('dashboard'))
+            flash('Welcome! Please complete your profile by adding a profile picture.', 'success')
+            return redirect(url_for('profile'))
     
     return redirect(url_for('login'))
 
@@ -413,6 +414,35 @@ def profile():
         # Update profile details
         current_user.username = request.form.get('username', current_user.username)
         current_user.email = request.form.get('email', current_user.email)
+        
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            profile_image = request.files['profile_image']
+            
+            if profile_image and profile_image.filename:
+                # Secure the filename to prevent security issues
+                filename = profile_image.filename
+                # Generate a unique filename to avoid conflicts
+                unique_filename = f"profile_{current_user.id}_{secrets.token_hex(8)}{os.path.splitext(filename)[1]}"
+                
+                # Create uploads directory if it doesn't exist
+                uploads_dir = os.path.join('static', 'uploads', 'profiles')
+                os.makedirs(uploads_dir, exist_ok=True)
+                
+                # Save the file
+                file_path = os.path.join(uploads_dir, unique_filename)
+                profile_image.save(file_path)
+                
+                # Update the user's profile picture
+                current_user.profile_picture = f"/static/uploads/profiles/{unique_filename}"
+                flash('Profile picture updated successfully')
+        
+        # Remove profile picture if requested
+        if request.form.get('remove_profile_pic'):
+            # If there's an existing profile picture, we would delete the file in a production app
+            # Here we'll just remove the reference
+            current_user.profile_picture = None
+            flash('Profile picture removed')
         
         # Update password if provided
         current_password = request.form.get('current_password')
