@@ -521,6 +521,9 @@ def settings():
     """Render application settings page"""
     facility = Facility.query.first()
     
+    # Get hardware API key for display
+    hardware_api_key = os.environ.get('HARDWARE_API_KEY', 'dev_hardware_key')
+    
     if request.method == 'POST':
         setting_type = request.form.get('setting_type')
         
@@ -554,9 +557,34 @@ def settings():
             
             flash(f'Display settings updated successfully. Theme set to {theme}.')
         
+        elif setting_type == 'hardware':
+            # Regenerate the hardware API key if requested
+            if request.form.get('regenerate_api_key'):
+                # In a real app, you would update the environment variable or settings
+                # For demo purposes, we'll just show a message
+                new_key = secrets.token_hex(16)
+                flash(f'API Key regenerated. New key: {new_key}', 'success')
+                flash('Note: In a production environment, this key would be saved securely.', 'info')
+                hardware_api_key = new_key
+            
+            # Update hardware settings
+            reporting_interval = request.form.get('reporting_interval')
+            if reporting_interval:
+                flash(f'Hardware reporting interval updated to {reporting_interval} seconds', 'success')
+        
         return redirect(url_for('settings'))
     
-    return render_template('settings.html', facility=facility)
+    # Generate API endpoint URLs for display
+    api_endpoints = {
+        'data_url': f"{request.host_url.rstrip('/')}/api/hardware/data",
+        'config_url': f"{request.host_url.rstrip('/')}/api/hardware/config",
+        'status_url': f"{request.host_url.rstrip('/')}/api/hardware/status"
+    }
+    
+    return render_template('settings.html', 
+                          facility=facility, 
+                          hardware_api_key=hardware_api_key,
+                          api_endpoints=api_endpoints)
 
 
 @app.route('/api/data')
@@ -631,6 +659,170 @@ def get_predictions():
         'status': 'success',
         'data': prediction_data
     })
+
+
+# Hardware Integration Endpoints
+
+@app.route('/api/hardware/data', methods=['POST'])
+def receive_hardware_data():
+    """API endpoint to receive data from IoT hardware sensors"""
+    try:
+        # Get API key from headers for authentication
+        api_key = request.headers.get('X-API-Key')
+        
+        # Check if the API key is valid (you would implement proper key validation)
+        if not api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing API key'
+            }), 401
+        
+        # Validate API key (simple method for demonstration)
+        # In production, use a more secure method
+        if api_key != os.environ.get('HARDWARE_API_KEY', 'dev_hardware_key'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid API key'
+            }), 401
+        
+        # Validate the incoming data
+        data = request.json
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        # Extract required sensor data fields
+        required_fields = ['energy_produced', 'energy_consumed', 'current_load']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}'
+                }), 400
+        
+        # Extract data fields with validation
+        energy_produced = float(data.get('energy_produced', 0))
+        energy_consumed = float(data.get('energy_consumed', 0))
+        current_load = float(data.get('current_load', 0))
+        
+        # Calculate efficiency
+        if energy_produced > 0:
+            efficiency = min(100, (energy_consumed / energy_produced) * 100)
+        else:
+            efficiency = 0
+        
+        # Get the facility ID from request or use the default
+        facility_id = data.get('facility_id')
+        if not facility_id:
+            # Get the default facility
+            facility = Facility.query.first()
+            if not facility:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No facility configured'
+                }), 400
+            facility_id = facility.id
+        
+        # Create a new energy data record
+        energy_data = EnergyData(
+            timestamp=datetime.utcnow(),
+            energy_produced=energy_produced,
+            energy_consumed=energy_consumed,
+            efficiency=efficiency,
+            current_load=current_load,
+            facility_id=facility_id
+        )
+        
+        # Save to database
+        db.session.add(energy_data)
+        db.session.commit()
+        
+        logger.info(f"Received hardware data: produced={energy_produced}, consumed={energy_consumed}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Data received successfully',
+            'data_id': energy_data.id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing hardware data: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Server error: {str(e)}'
+        }), 500
+
+
+@app.route('/api/hardware/status', methods=['GET'])
+def get_hardware_status():
+    """API endpoint to check hardware connectivity"""
+    try:
+        # Get API key from headers for authentication
+        api_key = request.headers.get('X-API-Key')
+        
+        # Check if the API key is valid
+        if not api_key or api_key != os.environ.get('HARDWARE_API_KEY', 'dev_hardware_key'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Authentication failed'
+            }), 401
+        
+        # Return system status
+        return jsonify({
+            'status': 'success',
+            'server_time': datetime.utcnow().isoformat(),
+            'message': 'System online and ready to receive data'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking hardware status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Server error: {str(e)}'
+        }), 500
+
+
+@app.route('/api/hardware/config', methods=['GET'])
+def get_hardware_config():
+    """API endpoint to provide configuration to IoT devices"""
+    try:
+        # Get API key from headers for authentication
+        api_key = request.headers.get('X-API-Key')
+        
+        # Check if the API key is valid
+        if not api_key or api_key != os.environ.get('HARDWARE_API_KEY', 'dev_hardware_key'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Authentication failed'
+            }), 401
+        
+        # Get facility data for configuration
+        facility = Facility.query.first()
+        if not facility:
+            return jsonify({
+                'status': 'error',
+                'message': 'No facility configured'
+            }), 400
+        
+        # Return configuration data
+        return jsonify({
+            'status': 'success',
+            'config': {
+                'facility_id': facility.id,
+                'reporting_interval': 300,  # seconds
+                'power_save_mode': False,
+                'data_fields': ['energy_produced', 'energy_consumed', 'current_load']
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error providing hardware configuration: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Server error: {str(e)}'
+        }), 500
 
 
 if __name__ == '__main__':
