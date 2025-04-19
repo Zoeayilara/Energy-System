@@ -47,4 +47,14 @@ class EnergyData(db.Model):
     current_load = db.Column(db.Float, nullable=False)
     facility_id = db.Column(db.Integer, db.ForeignKey('facility.id'), nullable=False)
     
+    # Electrical parameters for voltage monitoring
+    voltage = db.Column(db.Float, nullable=True)
+    current = db.Column(db.Float, nullable=True)
+    frequency = db.Column(db.Float, nullable=True)
+    power_factor = db.Column(db.Float, nullable=True)
+    
+    # Alert data
+    alert_message = db.Column(db.String(255), nullable=True)
+    alert_level = db.Column(db.String(50), nullable=True)  # "info", "warning", "critical"
+    
     facility = db.relationship('Facility', back_populates='energy_records')

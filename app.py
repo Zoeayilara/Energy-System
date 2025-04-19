@@ -707,6 +707,12 @@ def receive_hardware_data():
         energy_consumed = float(data.get('energy_consumed', 0))
         current_load = float(data.get('current_load', 0))
         
+        # Extract optional but important electrical parameters
+        voltage = float(data.get('voltage', 0))
+        current = float(data.get('current', 0))
+        frequency = float(data.get('frequency', 0))
+        power_factor = float(data.get('power_factor', 0))
+        
         # Calculate efficiency
         if energy_produced > 0:
             efficiency = min(100, (energy_consumed / energy_produced) * 100)
@@ -725,27 +731,71 @@ def receive_hardware_data():
                 }), 400
             facility_id = facility.id
         
-        # Create a new energy data record
+        # Analyze voltage conditions and create alerts if necessary
+        alert_message = None
+        alert_level = None
+        
+        if voltage > 0:  # Only check if voltage data is provided
+            # These thresholds would be configurable in a real system
+            nominal_voltage = 220  # This could be pulled from facility settings
+            high_voltage_threshold = nominal_voltage * 1.1  # 10% above nominal
+            low_voltage_threshold = nominal_voltage * 0.9   # 10% below nominal
+            critical_high_threshold = nominal_voltage * 1.15 # 15% above nominal
+            critical_low_threshold = nominal_voltage * 0.85  # 15% below nominal
+            
+            if voltage >= critical_high_threshold:
+                alert_message = f"CRITICAL HIGH VOLTAGE DETECTED: {voltage:.1f}V"
+                alert_level = "critical"
+                logger.warning(f"Critical high voltage detected: {voltage:.1f}V")
+            elif voltage >= high_voltage_threshold:
+                alert_message = f"High voltage condition: {voltage:.1f}V"
+                alert_level = "warning"
+                logger.info(f"High voltage condition: {voltage:.1f}V")
+            elif voltage <= critical_low_threshold:
+                alert_message = f"CRITICAL LOW VOLTAGE DETECTED: {voltage:.1f}V"
+                alert_level = "critical"
+                logger.warning(f"Critical low voltage detected: {voltage:.1f}V")
+            elif voltage <= low_voltage_threshold:
+                alert_message = f"Low voltage condition: {voltage:.1f}V"
+                alert_level = "warning"
+                logger.info(f"Low voltage condition: {voltage:.1f}V")
+        
+        # Create a new energy data record with additional electrical parameters
         energy_data = EnergyData(
             timestamp=datetime.utcnow(),
             energy_produced=energy_produced,
             energy_consumed=energy_consumed,
             efficiency=efficiency,
             current_load=current_load,
-            facility_id=facility_id
+            facility_id=facility_id,
+            voltage=voltage if voltage > 0 else None,
+            current=current if current > 0 else None,
+            frequency=frequency if frequency > 0 else None,
+            power_factor=power_factor if power_factor > 0 else None,
+            alert_message=alert_message,
+            alert_level=alert_level
         )
         
         # Save to database
         db.session.add(energy_data)
         db.session.commit()
         
-        logger.info(f"Received hardware data: produced={energy_produced}, consumed={energy_consumed}")
+        logger.info(f"Received hardware data: produced={energy_produced}, consumed={energy_consumed}, voltage={voltage}")
         
-        return jsonify({
+        # Prepare response with alert information if applicable
+        response = {
             'status': 'success',
             'message': 'Data received successfully',
             'data_id': energy_data.id
-        })
+        }
+        
+        if alert_message:
+            response['alert'] = {
+                'message': alert_message,
+                'level': alert_level
+            }
+        
+        return jsonify(response)
         
     except Exception as e:
         logger.error(f"Error processing hardware data: {str(e)}")
@@ -806,14 +856,23 @@ def get_hardware_config():
                 'message': 'No facility configured'
             }), 400
         
-        # Return configuration data
+        # Return configuration data with voltage monitoring parameters
         return jsonify({
             'status': 'success',
             'config': {
                 'facility_id': facility.id,
                 'reporting_interval': 300,  # seconds
                 'power_save_mode': False,
-                'data_fields': ['energy_produced', 'energy_consumed', 'current_load']
+                'data_fields': ['energy_produced', 'energy_consumed', 'current_load'],
+                'electrical_monitoring': {
+                    'enabled': True,
+                    'voltage_monitoring': True,
+                    'nominal_voltage': 220,  # V
+                    'voltage_high_threshold': 242,  # V (10% above nominal)
+                    'voltage_low_threshold': 198,   # V (10% below nominal)
+                    'voltage_critical_high': 253,   # V (15% above nominal)
+                    'voltage_critical_low': 187     # V (15% below nominal)
+                }
             }
         })
         
