@@ -296,12 +296,15 @@ def dashboard():
     """Render the main dashboard"""
     facility = Facility.query.first()
     
-    # Get the latest energy data
-    latest_data = EnergyData.query.order_by(EnergyData.timestamp.desc()).first()
+    # Get the latest energy data from the last hour only
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    latest_data = EnergyData.query.filter(
+        EnergyData.timestamp >= one_hour_ago
+    ).order_by(EnergyData.timestamp.desc()).first()
     
-    # Get AI recommendations based on latest data
+    # Only get recommendations if we have recent data
     recommendations = []
-    if latest_data:
+    if latest_data and latest_data.timestamp:
         data_dict = {
             'energy_produced': latest_data.energy_produced,
             'energy_consumed': latest_data.energy_consumed,

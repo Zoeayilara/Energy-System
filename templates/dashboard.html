@@ -151,11 +151,12 @@
                         <h5 class="card-title mb-0">System Load</h5>
                         <span data-feather="cpu" class="text-warning"></span>
                     </div>
-                    {% if latest_data %}
+                    {% if latest_data and latest_data.timestamp %}
                     <h2 class="display-5 fw-bold text-warning">{{ latest_data.current_load }}%</h2>
+                    <small class="text-success">Last updated: {{ latest_data.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-muted">--%</h2>
-                    <small class="text-muted">Waiting for hardware data</small>
+                    <h2 class="display-5 fw-bold text-muted">No Data</h2>
+                    <small class="text-muted">Waiting for hardware connection</small>
                     {% endif %}
                     <p class="text-muted">Current system load</p>
                 </div>
