@@ -26,14 +26,21 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", secrets.token_hex(16))
 
 # Configure the SQLAlchemy database
-database_url = os.environ.get("DATABASE_URL", "sqlite:///energy_intelligence.db")
+database_url = os.environ.get("DATABASE_URL", "sqlite:///instance/energy_intelligence.db")
 # Fix PostgreSQL URL format for SQLAlchemy 1.4+
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Add SSL mode require for PostgreSQL
+    if "?" in database_url:
+        database_url += "&sslmode=disable"
+    else:
+        database_url += "?sslmode=disable"
+
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
+    "connect_args": {"connect_timeout": 10}
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
