@@ -211,6 +211,109 @@
                                 Connect your energy management system with other services and devices.
                             </div>
                             
+                            <!-- Hardware Integration Section -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Hardware Integration</h5>
+                                    <span class="badge bg-success">Active</span>
+                                </div>
+                                
+                                <div class="card mb-4 border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="mb-3">API Endpoints</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label">Data Submission Endpoint</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control bg-white" value="{{ api_endpoints.data_url }}" readonly>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ api_endpoints.data_url }}')">
+                                                    <span data-feather="copy"></span>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Use this endpoint to send energy data from your sensors</small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Configuration Endpoint</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control bg-white" value="{{ api_endpoints.config_url }}" readonly>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ api_endpoints.config_url }}')">
+                                                    <span data-feather="copy"></span>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Use this endpoint to get configuration for your hardware devices</small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Status Endpoint</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control bg-white" value="{{ api_endpoints.status_url }}" readonly>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ api_endpoints.status_url }}')">
+                                                    <span data-feather="copy"></span>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Use this endpoint to check connectivity with the server</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <form method="POST" action="{{ url_for('settings') }}">
+                                    <input type="hidden" name="setting_type" value="hardware">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">API Key</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-white" value="{{ hardware_api_key }}" id="apiKeyField" readonly>
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleApiKey">
+                                                <span data-feather="eye"></span>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ hardware_api_key }}')">
+                                                <span data-feather="copy"></span>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Use this API key to authenticate your hardware devices</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="regenerateApiKey" name="regenerate_api_key">
+                                            <label class="form-check-label" for="regenerateApiKey">
+                                                Regenerate API Key
+                                            </label>
+                                            <div class="form-text text-warning">Warning: This will invalidate all existing connections!</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="reportingInterval" class="form-label">Reporting Interval (seconds)</label>
+                                        <select class="form-select" id="reportingInterval" name="reporting_interval">
+                                            <option value="60">Every minute</option>
+                                            <option value="300" selected>Every 5 minutes</option>
+                                            <option value="900">Every 15 minutes</option>
+                                            <option value="1800">Every 30 minutes</option>
+                                            <option value="3600">Every hour</option>
+                                        </select>
+                                        <div class="form-text">How often your hardware devices should send data</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Example Hardware Devices</h6>
+                                        <p class="small">Check our <a href="/examples/HARDWARE_INTEGRATION.md" target="_blank">hardware integration guide</a> for detailed documentation.</p>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="/examples/esp8266_sensor_client.ino" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <span data-feather="cpu" class="me-1"></span> ESP8266/ESP32 Example
+                                            </a>
+                                            <a href="/examples/python_sensor_client.py" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <span data-feather="code" class="me-1"></span> Python Example
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button type="submit" class="btn btn-primary">Save Hardware Settings</button>
+                                    </div>
+                                </form>
+                            </div>
+                            
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h5 class="mb-0">Connected Services</h5>
@@ -426,6 +529,85 @@
                 confirmResetBtn.disabled = this.value !== 'RESET';
             });
         }
+        
+        // Handle API key visibility toggle
+        const toggleApiKeyBtn = document.getElementById('toggleApiKey');
+        const apiKeyField = document.getElementById('apiKeyField');
+        
+        if(toggleApiKeyBtn && apiKeyField) {
+            toggleApiKeyBtn.addEventListener('click', function() {
+                if (apiKeyField.type === 'password') {
+                    apiKeyField.type = 'text';
+                    toggleApiKeyBtn.innerHTML = '<span data-feather="eye-off"></span>';
+                } else {
+                    apiKeyField.type = 'password';
+                    toggleApiKeyBtn.innerHTML = '<span data-feather="eye"></span>';
+                }
+                feather.replace();
+            });
+            
+            // Initialize as password
+            apiKeyField.type = 'password';
+        }
     });
+    
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('Copied to clipboard');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+    
+    // Show a toast notification
+    function showToast(message) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create toast element
+        const toastId = 'toast-' + Date.now();
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast';
+        toastEl.id = toastId;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        toastEl.innerHTML = `
+            <div class="toast-header">
+                <span data-feather="check-circle" class="text-success me-2"></span>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        toastContainer.appendChild(toastEl);
+        
+        // Initialize and show the toast
+        const toast = new bootstrap.Toast(toastEl, {
+            autohide: true,
+            delay: 3000
+        });
+        
+        toast.show();
+        
+        // Replace feather icons in toast
+        feather.replace();
+        
+        // Remove the toast element after it's hidden
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            toastEl.remove();
+        });
+    }
 </script>
 {% endblock %}
