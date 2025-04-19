@@ -1,5 +1,6 @@
 import os
 import secrets
+import random
 from datetime import datetime, timedelta
 import logging
 
@@ -703,6 +704,23 @@ def get_predictions():
         'status': 'success',
         'data': prediction_data
     })
+
+
+# Debug endpoint to generate data immediately (for testing)
+@app.route('/api/debug/generate-data', methods=['GET'])
+def debug_generate_data():
+    """Generate mock data immediately for testing"""
+    if os.environ.get('FLASK_ENV') != 'production':
+        update_mock_data()
+        return jsonify({
+            'status': 'success',
+            'message': 'Generated new mock data'
+        })
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'Debug endpoints not available in production'
+        }), 403
 
 
 # Hardware Integration Endpoints

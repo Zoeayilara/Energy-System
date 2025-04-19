@@ -23,6 +23,12 @@ Use this endpoint to send energy data from your sensors to the platform.
 - `energy_consumed` (float): Amount of energy consumed in kWh
 - `current_load` (float): Current energy load in kW
 
+**Optional Electrical Parameters:**
+- `voltage` (float): Voltage level in Volts (V)
+- `current` (float): Current in Amperes (A)
+- `frequency` (float): Frequency in Hertz (Hz)
+- `power_factor` (float): Power factor (0-1)
+
 **Example Request:**
 ```http
 POST /api/hardware/data HTTP/1.1
@@ -33,7 +39,11 @@ X-API-Key: your_api_key_here
 {
   "energy_produced": 75.45,
   "energy_consumed": 62.30,
-  "current_load": 35.80
+  "current_load": 35.80,
+  "voltage": 220.5,
+  "current": 15.2,
+  "frequency": 50.0,
+  "power_factor": 0.95
 }
 ```
 
@@ -42,9 +52,18 @@ X-API-Key: your_api_key_here
 {
   "status": "success",
   "message": "Data received successfully",
-  "data_id": 123
+  "data_id": 123,
+  "alert": {
+    "message": "High voltage condition: 245.2V",
+    "level": "warning"
+  }
 }
 ```
+
+**Note:** The `alert` field will only be present in the response if a voltage condition is detected.
+Alert levels include:
+- `warning`: For voltage outside the recommended range but not critical
+- `critical`: For voltage conditions that require immediate attention
 
 ### 2. Get Configuration
 
@@ -69,7 +88,16 @@ X-API-Key: your_api_key_here
     "facility_id": 1,
     "reporting_interval": 300,
     "power_save_mode": false,
-    "data_fields": ["energy_produced", "energy_consumed", "current_load"]
+    "data_fields": ["energy_produced", "energy_consumed", "current_load"],
+    "electrical_monitoring": {
+      "enabled": true,
+      "voltage_monitoring": true,
+      "nominal_voltage": 220,
+      "voltage_high_threshold": 242,
+      "voltage_low_threshold": 198,
+      "voltage_critical_high": 253,
+      "voltage_critical_low": 187
+    }
   }
 }
 ```
@@ -107,6 +135,11 @@ To integrate with the Energy Intelligence platform, you'll need:
    - Energy production (for renewable sources)
    - Energy consumption
    - Current load
+3. For advanced electrical monitoring (optional):
+   - Voltage sensors (for voltage monitoring and alerts)
+   - Current sensors
+   - Frequency meter
+   - Power factor monitoring
 
 ## Example Implementations
 
