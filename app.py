@@ -25,7 +25,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", secrets.token_hex(16))
 
 # Configure the SQLAlchemy database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///energy_intelligence.db")
+database_url = os.environ.get("DATABASE_URL", "sqlite:///energy_intelligence.db")
+# Fix PostgreSQL URL format for SQLAlchemy 1.4+
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -67,19 +71,59 @@ def update_mock_data():
         if facility:
             mock_data = generate_mock_data()
             
-            # Create a new energy data record
+            # Generate random electrical parameters
+            voltage = round(random.uniform(215.0, 235.0), 1)  # normal range
+            current = round(random.uniform(10.0, 20.0), 1)
+            frequency = round(random.uniform(49.8, 50.2), 1)
+            power_factor = round(random.uniform(0.85, 0.98), 2)
+            
+            # Occasionally generate voltage anomalies (1 in 20 chance)
+            alert_message = None
+            alert_level = None
+            
+            if random.randint(1, 20) == 1:
+                anomaly_type = random.choice(['high_warning', 'low_warning', 'critical_high', 'critical_low'])
+                
+                if anomaly_type == 'high_warning':
+                    voltage = round(random.uniform(240.0, 245.0), 1)
+                    alert_message = f"High voltage condition: {voltage}V"
+                    alert_level = "warning"
+                elif anomaly_type == 'low_warning':
+                    voltage = round(random.uniform(195.0, 205.0), 1)
+                    alert_message = f"Low voltage condition: {voltage}V"
+                    alert_level = "warning"
+                elif anomaly_type == 'critical_high':
+                    voltage = round(random.uniform(250.0, 260.0), 1)
+                    alert_message = f"CRITICAL HIGH VOLTAGE DETECTED: {voltage}V"
+                    alert_level = "critical"
+                elif anomaly_type == 'critical_low':
+                    voltage = round(random.uniform(180.0, 190.0), 1)
+                    alert_message = f"CRITICAL LOW VOLTAGE DETECTED: {voltage}V"
+                    alert_level = "critical"
+            
+            # Create a new energy data record with electrical parameters
             energy_data = EnergyData(
                 timestamp=datetime.utcnow(),
                 energy_produced=mock_data['energy_produced'],
                 energy_consumed=mock_data['energy_consumed'],
                 efficiency=mock_data['efficiency'],
                 current_load=mock_data['current_load'],
-                facility_id=facility.id
+                facility_id=facility.id,
+                voltage=voltage,
+                current=current,
+                frequency=frequency,
+                power_factor=power_factor,
+                alert_message=alert_message,
+                alert_level=alert_level
             )
             
             db.session.add(energy_data)
             db.session.commit()
-            logger.debug("Updated mock data")
+            
+            if alert_message:
+                logger.warning(f"Updated mock data with alert: {alert_message}")
+            else:
+                logger.debug("Updated mock data")
 
 
 def create_default_facility():
