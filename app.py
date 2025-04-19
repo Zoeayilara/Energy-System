@@ -723,6 +723,122 @@ def debug_generate_data():
         }), 403
 
 
+@app.route('/api/debug/voltage-demo', methods=['GET'])
+def debug_voltage_demo():
+    """Demonstrate real-time voltage monitoring with various conditions"""
+    if os.environ.get('FLASK_ENV') != 'production':
+        try:
+            # Get voltage condition from query parameter
+            condition = request.args.get('condition', 'normal')
+            facility = Facility.query.first()
+            
+            if not facility:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No facility found'
+                }), 404
+            
+            # Base energy data
+            energy_produced = round(random.uniform(40.0, 80.0), 2)
+            energy_consumed = round(random.uniform(30.0, 60.0), 2)
+            current_load = round(random.uniform(15.0, 45.0), 2)
+            
+            # Default electrical parameters
+            voltage = 220.0
+            current = round(random.uniform(8.0, 15.0), 1)
+            frequency = round(random.uniform(49.8, 50.2), 1)
+            power_factor = round(random.uniform(0.85, 0.98), 2)
+            
+            # Alert defaults
+            alert_message = None
+            alert_level = None
+            
+            # Set voltage and alerts based on condition
+            if condition == 'high_warning':
+                voltage = round(random.uniform(240.0, 245.0), 1)
+                alert_message = f"High voltage condition: {voltage}V"
+                alert_level = "warning"
+            elif condition == 'high_critical':
+                voltage = round(random.uniform(250.0, 260.0), 1)
+                alert_message = f"CRITICAL HIGH VOLTAGE DETECTED: {voltage}V"
+                alert_level = "critical"
+            elif condition == 'low_warning':
+                voltage = round(random.uniform(195.0, 205.0), 1)
+                alert_message = f"Low voltage condition: {voltage}V"
+                alert_level = "warning"
+            elif condition == 'low_critical':
+                voltage = round(random.uniform(180.0, 190.0), 1)
+                alert_message = f"CRITICAL LOW VOLTAGE DETECTED: {voltage}V"
+                alert_level = "critical"
+            elif condition == 'fluctuating':
+                # Random voltage between 195-245V to simulate fluctuation
+                voltage = round(random.uniform(195.0, 245.0), 1)
+                if voltage > 240.0:
+                    alert_message = f"High voltage condition: {voltage}V"
+                    alert_level = "warning"
+                elif voltage < 200.0:
+                    alert_message = f"Low voltage condition: {voltage}V"
+                    alert_level = "warning"
+            
+            # Calculate efficiency
+            if energy_produced > 0:
+                efficiency = min(100, (energy_consumed / energy_produced) * 100)
+            else:
+                efficiency = 0
+            
+            # Create a new energy data record
+            energy_data = EnergyData(
+                timestamp=datetime.utcnow(),
+                energy_produced=energy_produced,
+                energy_consumed=energy_consumed,
+                efficiency=efficiency,
+                current_load=current_load,
+                facility_id=facility.id,
+                voltage=voltage,
+                current=current,
+                frequency=frequency,
+                power_factor=power_factor,
+                alert_message=alert_message,
+                alert_level=alert_level
+            )
+            
+            db.session.add(energy_data)
+            db.session.commit()
+            
+            response = {
+                'status': 'success',
+                'message': f'Voltage demo data generated ({condition})',
+                'data': {
+                    'timestamp': energy_data.timestamp.isoformat(),
+                    'voltage': voltage,
+                    'current': current,
+                    'frequency': frequency,
+                    'power_factor': power_factor
+                }
+            }
+            
+            if alert_message:
+                response['alert'] = {
+                    'message': alert_message,
+                    'level': alert_level
+                }
+            
+            return jsonify(response)
+        
+        except Exception as e:
+            logger.error(f"Error in voltage demo: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to generate voltage demo data',
+                'error': str(e)
+            }), 500
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'Debug endpoints not available in production'
+        }), 403
+
+
 # Example Files Routes
 @app.route('/examples/<path:filename>')
 def serve_example(filename):
