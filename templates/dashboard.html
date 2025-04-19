@@ -28,21 +28,47 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="alert {% if latest_data.alert_level == 'critical' %}alert-danger{% elif latest_data.alert_level == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
-                <div class="d-flex align-items-center">
-                    {% if latest_data.alert_level == 'critical' %}
-                    <span data-feather="alert-octagon" class="me-2"></span>
-                    {% elif latest_data.alert_level == 'warning' %}
-                    <span data-feather="alert-triangle" class="me-2"></span>
-                    {% else %}
-                    <span data-feather="info" class="me-2"></span>
-                    {% endif %}
-                    <strong>{{ latest_data.alert_message }}</strong>
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        {% if latest_data.alert_level == 'critical' %}
+                        <span data-feather="alert-octagon" class="me-2"></span>
+                        {% elif latest_data.alert_level == 'warning' %}
+                        <span data-feather="alert-triangle" class="me-2"></span>
+                        {% else %}
+                        <span data-feather="info" class="me-2"></span>
+                        {% endif %}
+                        <strong>{{ latest_data.alert_message }}</strong>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('voltage_demo') }}" class="btn btn-sm {% if latest_data.alert_level == 'critical' %}btn-outline-danger{% elif latest_data.alert_level == 'warning' %}btn-outline-warning{% else %}btn-outline-info{% endif %} me-2">
+                            <span data-feather="zap" class="me-1"></span> Monitor Voltage
+                        </a>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </div>
     </div>
     {% endif %}
+    
+    <!-- Real-time Voltage Demo Promo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1"><span data-feather="zap" class="me-2"></span> Real-time Voltage Monitoring</h5>
+                            <p class="mb-0 text-muted">Experience our new voltage monitoring feature with real-time updates and alerts.</p>
+                        </div>
+                        <a href="{{ url_for('voltage_demo') }}" class="btn btn-primary">
+                            <span data-feather="activity" class="me-1"></span> Try Live Demo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <!-- Energy Production Card -->

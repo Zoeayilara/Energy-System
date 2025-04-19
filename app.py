@@ -503,6 +503,12 @@ def ml_dashboard():
     )
 
 
+@app.route('/voltage-demo')
+def voltage_demo():
+    """Render the real-time voltage monitoring demonstration page"""
+    return render_template('voltage_demo.html')
+
+
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
