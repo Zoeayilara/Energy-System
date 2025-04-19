@@ -65,30 +65,8 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-def update_mock_data():
-    """Update mock data and store in database"""
-    with app.app_context():
-        facility = Facility.query.first()
-        if facility:
-            mock_data = generate_mock_data()
-            
-            # Create a new energy data record WITHOUT electrical parameters
-            # This ensures we only show electrical data when real hardware is connected
-            energy_data = EnergyData(
-                timestamp=datetime.utcnow(),
-                energy_produced=mock_data['energy_produced'],
-                energy_consumed=mock_data['energy_consumed'],
-                efficiency=mock_data['efficiency'],
-                current_load=mock_data['current_load'],
-                facility_id=facility.id
-                # No voltage, current, frequency or power_factor included
-                # These will only be set when real hardware sends data
-            )
-            
-            db.session.add(energy_data)
-            db.session.commit()
-            
-            logger.debug("Updated mock data")
+# REMOVED: No more mock data updates
+# All data will come only from actual hardware connections
 
 
 def create_default_facility():
@@ -125,16 +103,7 @@ with app.app_context():
     # Create a default facility if none exists
     create_default_facility()
     
-    # Schedule the mock data update task
-    if not scheduler.get_job('update_mock_data'):
-        scheduler.add_job(
-            update_mock_data,
-            'interval',
-            minutes=5,
-            id='update_mock_data',
-            replace_existing=True
-        )
-        logger.info("Scheduled mock data updates")
+    # No mock data is used - all data comes from hardware only
 
 
 @app.route('/')
@@ -676,21 +645,8 @@ def get_predictions():
     })
 
 
-# Debug endpoint to generate data immediately (for testing)
-@app.route('/api/debug/generate-data', methods=['GET'])
-def debug_generate_data():
-    """Generate mock data immediately for testing"""
-    if os.environ.get('FLASK_ENV') != 'production':
-        update_mock_data()
-        return jsonify({
-            'status': 'success',
-            'message': 'Generated new mock data'
-        })
-    else:
-        return jsonify({
-            'status': 'error',
-            'message': 'Debug endpoints not available in production'
-        }), 403
+# Debug endpoint removed - no mock data is generated
+# All data comes from actual hardware connections
 
 
 @app.route('/api/debug/voltage-demo', methods=['GET'])

@@ -70,6 +70,21 @@
         </div>
     </div>
 
+    <!-- No data alert -->
+    {% if not latest_data %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <span data-feather="info" class="me-2"></span>
+                <strong>No data available.</strong> Connect hardware devices to start monitoring your energy system.
+                <a href="{{ url_for('serve_example', filename='HARDWARE_INTEGRATION.md') }}" class="alert-link">
+                    See hardware integration guide
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row">
         <!-- Energy Production Card -->
         <div class="col-md-3 mb-4">
@@ -82,7 +97,8 @@
                     {% if latest_data %}
                     <h2 class="display-5 fw-bold text-primary">{{ latest_data.energy_produced }} kWh</h2>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-primary">-- kWh</h2>
+                    <h2 class="display-5 fw-bold text-muted">-- kWh</h2>
+                    <small class="text-muted">Waiting for hardware data</small>
                     {% endif %}
                     <p class="text-muted">Current solar energy production</p>
                 </div>
@@ -100,7 +116,8 @@
                     {% if latest_data %}
                     <h2 class="display-5 fw-bold text-danger">{{ latest_data.energy_consumed }} kWh</h2>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-danger">-- kWh</h2>
+                    <h2 class="display-5 fw-bold text-muted">-- kWh</h2>
+                    <small class="text-muted">Waiting for hardware data</small>
                     {% endif %}
                     <p class="text-muted">Current facility consumption</p>
                 </div>
@@ -118,7 +135,8 @@
                     {% if latest_data %}
                     <h2 class="display-5 fw-bold text-success">{{ latest_data.efficiency }}%</h2>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-success">--%</h2>
+                    <h2 class="display-5 fw-bold text-muted">--%</h2>
+                    <small class="text-muted">Waiting for hardware data</small>
                     {% endif %}
                     <p class="text-muted">Current system efficiency</p>
                 </div>
@@ -136,7 +154,8 @@
                     {% if latest_data %}
                     <h2 class="display-5 fw-bold text-warning">{{ latest_data.current_load }}%</h2>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-warning">--%</h2>
+                    <h2 class="display-5 fw-bold text-muted">--%</h2>
+                    <small class="text-muted">Waiting for hardware data</small>
                     {% endif %}
                     <p class="text-muted">Current system load</p>
                 </div>
