@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timedelta
 import logging
 
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -721,6 +721,13 @@ def debug_generate_data():
             'status': 'error',
             'message': 'Debug endpoints not available in production'
         }), 403
+
+
+# Example Files Routes
+@app.route('/examples/<path:filename>')
+def serve_example(filename):
+    """Serve example files directly from the examples directory"""
+    return send_from_directory('examples', filename)
 
 
 # Hardware Integration Endpoints
