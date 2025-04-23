@@ -36,7 +36,12 @@ if database_url and database_url.startswith("postgres://"):
     else:
         database_url += "?sslmode=disable"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///instance/energy_intelligence.db"
+# Ensure instance directory exists
+instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+if not os.path.exists(instance_path):
+    os.makedirs(instance_path)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(instance_path, 'energy_intelligence.db')}"
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True
