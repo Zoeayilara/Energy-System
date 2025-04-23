@@ -7,19 +7,16 @@ Energy Intelligence application using Python requests library.
 It can be used for testing or as a basis for integration with
 other Python-based energy monitoring systems.
 """
-
-import requests
+import requests  # Corrected import statement
 import json
 import time
 import random
 from datetime import datetime
-
 # API Configuration
 SERVER_URL = "http://localhost:5000"  # Change to your server URL
 API_KEY = "dev_hardware_key"  # Change to your API key
-
 # Reporting configuration
-REPORT_INTERVAL = 300  # seconds (5 minutes)
+REPORT_INTERVAL = 300  # seconds (5 minutes
 
 def get_server_config():
     """Get configuration from the server"""
