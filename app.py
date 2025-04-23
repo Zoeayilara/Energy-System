@@ -51,6 +51,10 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Initialize the database
 db.init_app(app)
 
+# Create database tables
+with app.app_context():
+    db.create_all()
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
