@@ -617,6 +617,62 @@ def get_data():
     })
 
 
+@app.route('/api/latest-hardware-data')
+@login_required
+def get_latest_hardware_data():
+    """API endpoint to get the latest hardware data including electrical parameters"""
+    # Get the latest data from the last 2 minutes only
+    two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+    latest_data = EnergyData.query.filter(
+        EnergyData.timestamp >= two_minutes_ago
+    ).order_by(EnergyData.timestamp.desc()).first()
+    
+    if not latest_data:
+        return jsonify({
+            'status': 'error',
+            'message': 'No recent data available'
+        }), 404
+    
+    # Format data as JSON with all electrical parameters
+    data = {
+        'timestamp': latest_data.timestamp.isoformat(),
+        'energy_produced': latest_data.energy_produced,
+        'energy_consumed': latest_data.energy_consumed,
+        'efficiency': latest_data.efficiency,
+        'current_load': latest_data.current_load,
+        'voltage': latest_data.voltage,
+        'current': latest_data.current,
+        'frequency': latest_data.frequency,
+        'power_factor': latest_data.power_factor,
+        'alert_message': latest_data.alert_message,
+        'alert_level': latest_data.alert_level
+    }
+    
+    return jsonify({
+        'status': 'success',
+        'data': data
+    })
+
+
+@app.route('/api/hardware-status-check')
+@login_required
+def check_hardware_status():
+    """API endpoint to check if hardware has sent recent data"""
+    # Check if there's data from the last 2 minutes
+    two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+    recent_data = EnergyData.query.filter(
+        EnergyData.timestamp >= two_minutes_ago
+    ).first()
+    
+    has_recent_data = recent_data is not None
+    
+    return jsonify({
+        'status': 'success',
+        'has_recent_data': has_recent_data,
+        'last_data_time': recent_data.timestamp.isoformat() if recent_data else None
+    })
+
+
 @app.route('/api/predictions')
 @login_required
 def get_predictions():

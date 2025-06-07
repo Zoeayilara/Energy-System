@@ -383,9 +383,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+    let refreshInterval;
+    let hardwareCheckInterval;
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Feather icons
         feather.replace();
+        
+        // Start auto-refresh for hardware data
+        startAutoRefresh();
+        
+        // Check hardware status periodically
+        checkHardwareStatus();
         
         // Set up the Energy Chart
         const energyChartCtx = document.getElementById('energyChart').getContext('2d');
@@ -521,6 +530,196 @@
                     }
                 }
             }
+        });
+        
+        function startAutoRefresh() {
+            // Refresh every 30 seconds
+            refreshInterval = setInterval(function() {
+                refreshHardwareData();
+            }, 30000);
+        }
+        
+        function refreshHardwareData() {
+            fetch('/api/latest-hardware-data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.data) {
+                        updateHardwareDisplay(data.data);
+                        updateHardwareStatus(true);
+                    } else {
+                        updateHardwareStatus(false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching hardware data:', error);
+                    updateHardwareStatus(false);
+                });
+        }
+        
+        function updateHardwareDisplay(data) {
+            // Update voltage card
+            const voltageCard = document.querySelector('#voltage-card h3');
+            const voltageTime = document.querySelector('#voltage-card small');
+            if (data.voltage && data.voltage > 0) {
+                voltageCard.textContent = data.voltage + ' V';
+                voltageCard.className = `mb-0 ${getVoltageStatusClass(data.voltage, data.alert_level)}`;
+                voltageTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+            } else {
+                voltageCard.textContent = '-- V';
+                voltageCard.className = 'mb-0 text-muted';
+                voltageTime.textContent = 'Connect hardware to monitor';
+            }
+            
+            // Update current card
+            const currentCard = document.querySelector('#hardware-readings .col-md-3:nth-child(2) h3');
+            const currentTime = document.querySelector('#hardware-readings .col-md-3:nth-child(2) small');
+            if (data.current && data.current > 0) {
+                currentCard.textContent = data.current + ' A';
+                currentCard.className = 'mb-0 text-primary';
+                currentTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+            } else {
+                currentCard.textContent = '-- A';
+                currentCard.className = 'mb-0 text-muted';
+                currentTime.textContent = 'Connect hardware to monitor';
+            }
+            
+            // Update frequency card
+            const frequencyCard = document.querySelector('#hardware-readings .col-md-3:nth-child(3) h3');
+            const frequencyTime = document.querySelector('#hardware-readings .col-md-3:nth-child(3) small');
+            if (data.frequency && data.frequency > 0) {
+                frequencyCard.textContent = data.frequency + ' Hz';
+                frequencyCard.className = 'mb-0 text-info';
+                frequencyTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+            } else {
+                frequencyCard.textContent = '-- Hz';
+                frequencyCard.className = 'mb-0 text-muted';
+                frequencyTime.textContent = 'Connect hardware to monitor';
+            }
+            
+            // Update power factor card
+            const powerFactorCard = document.querySelector('#hardware-readings .col-md-3:nth-child(4) h3');
+            const powerFactorTime = document.querySelector('#hardware-readings .col-md-3:nth-child(4) small');
+            if (data.power_factor && data.power_factor > 0) {
+                powerFactorCard.textContent = data.power_factor;
+                powerFactorCard.className = 'mb-0 text-secondary';
+                powerFactorTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+            } else {
+                powerFactorCard.textContent = '--';
+                powerFactorCard.className = 'mb-0 text-muted';
+                powerFactorTime.textContent = 'Connect hardware to monitor';
+            }
+            
+            // Update main dashboard stats
+            updateMainStats(data);
+        }
+        
+        function updateMainStats(data) {
+            // Update efficiency (convert from percentage to decimal)
+            const efficiencyCard = document.querySelector('.col-md-3:nth-child(3) .display-5');
+            if (data.efficiency !== undefined) {
+                efficiencyCard.textContent = (data.efficiency / 100).toFixed(2);
+                efficiencyCard.className = 'display-5 fw-bold text-success';
+            }
+            
+            // Update other stats if available
+            if (data.energy_produced !== undefined) {
+                const productionCard = document.querySelector('.col-md-3:nth-child(1) .display-5');
+                productionCard.textContent = data.energy_produced + ' kWh';
+                productionCard.className = 'display-5 fw-bold text-primary';
+            }
+            
+            if (data.energy_consumed !== undefined) {
+                const consumptionCard = document.querySelector('.col-md-3:nth-child(2) .display-5');
+                consumptionCard.textContent = data.energy_consumed + ' kWh';
+                consumptionCard.className = 'display-5 fw-bold text-danger';
+            }
+            
+            if (data.current_load !== undefined) {
+                const loadCard = document.querySelector('.col-md-3:nth-child(4) .display-5');
+                const loadTime = document.querySelector('.col-md-3:nth-child(4) small');
+                loadCard.textContent = data.current_load + '%';
+                loadCard.className = 'display-5 fw-bold text-warning';
+                loadTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+                loadTime.className = 'text-success';
+            }
+        }
+        
+        function getVoltageStatusClass(voltage, alertLevel) {
+            if (alertLevel === 'critical') {
+                return 'text-danger';
+            } else if (alertLevel === 'warning') {
+                return 'text-warning';
+            } else {
+                return 'text-success';
+            }
+        }
+        
+        function updateHardwareStatus(isConnected) {
+            const statusBadge = document.getElementById('hardware-status');
+            if (isConnected) {
+                statusBadge.textContent = 'Hardware Connected';
+                statusBadge.className = 'badge bg-success';
+            } else {
+                statusBadge.textContent = 'Waiting for data';
+                statusBadge.className = 'badge bg-secondary';
+                
+                // Reset all hardware readings to waiting state
+                resetHardwareReadings();
+            }
+        }
+        
+        function resetHardwareReadings() {
+            // Reset voltage
+            const voltageCard = document.querySelector('#voltage-card h3');
+            const voltageTime = document.querySelector('#voltage-card small');
+            voltageCard.textContent = '-- V';
+            voltageCard.className = 'mb-0 text-muted';
+            voltageTime.textContent = 'Connect hardware to monitor';
+            
+            // Reset current
+            const currentCard = document.querySelector('#hardware-readings .col-md-3:nth-child(2) h3');
+            const currentTime = document.querySelector('#hardware-readings .col-md-3:nth-child(2) small');
+            currentCard.textContent = '-- A';
+            currentCard.className = 'mb-0 text-muted';
+            currentTime.textContent = 'Connect hardware to monitor';
+            
+            // Reset frequency
+            const frequencyCard = document.querySelector('#hardware-readings .col-md-3:nth-child(3) h3');
+            const frequencyTime = document.querySelector('#hardware-readings .col-md-3:nth-child(3) small');
+            frequencyCard.textContent = '-- Hz';
+            frequencyCard.className = 'mb-0 text-muted';
+            frequencyTime.textContent = 'Connect hardware to monitor';
+            
+            // Reset power factor
+            const powerFactorCard = document.querySelector('#hardware-readings .col-md-3:nth-child(4) h3');
+            const powerFactorTime = document.querySelector('#hardware-readings .col-md-3:nth-child(4) small');
+            powerFactorCard.textContent = '--';
+            powerFactorCard.className = 'mb-0 text-muted';
+            powerFactorTime.textContent = 'Connect hardware to monitor';
+        }
+        
+        function checkHardwareStatus() {
+            // Check hardware status every 45 seconds
+            hardwareCheckInterval = setInterval(function() {
+                fetch('/api/hardware-status-check')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateHardwareStatus(data.has_recent_data);
+                    })
+                    .catch(error => {
+                        console.error('Error checking hardware status:', error);
+                        updateHardwareStatus(false);
+                    });
+            }, 45000);
+        }
+        
+        // Initial hardware status check
+        setTimeout(checkHardwareStatus, 2000);
+        
+        // Clean up intervals when page is unloaded
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (hardwareCheckInterval) clearInterval(hardwareCheckInterval);
         });
     });
 </script>
