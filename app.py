@@ -724,7 +724,7 @@ def debug_voltage_demo():
                     alert_message = f"Low voltage condition: {voltage}V"
                     alert_level = "warning"
             
-            # Calculate efficiency
+            # Calculate efficiency (as percentage for storage, will be converted to decimal in display)
             if energy_produced > 0:
                 efficiency = min(100, (energy_consumed / energy_produced) * 100)
             else:
@@ -842,7 +842,7 @@ def receive_hardware_data():
         frequency = float(data.get('frequency', 0))
         power_factor = float(data.get('power_factor', 0))
         
-        # Calculate efficiency
+        # Calculate efficiency (as percentage for storage, will be converted to decimal in display)
         if energy_produced > 0:
             efficiency = min(100, (energy_consumed / energy_produced) * 100)
         else:

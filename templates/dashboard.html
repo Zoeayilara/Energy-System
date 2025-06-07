@@ -133,12 +133,12 @@
                         <span data-feather="bar-chart-2" class="text-success"></span>
                     </div>
                     {% if latest_data %}
-                    <h2 class="display-5 fw-bold text-success">{{ latest_data.efficiency }}%</h2>
+                    <h2 class="display-5 fw-bold text-success">{{ "%.2f"|format(latest_data.efficiency/100) }}</h2>
                     {% else %}
-                    <h2 class="display-5 fw-bold text-muted">--%</h2>
+                    <h2 class="display-5 fw-bold text-muted">--</h2>
                     <small class="text-muted">Waiting for hardware data</small>
                     {% endif %}
-                    <p class="text-muted">Current system efficiency</p>
+                    <p class="text-muted">Current system efficiency (decimal)</p>
                 </div>
             </div>
         </div>
@@ -171,7 +171,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="card-title mb-0">Hardware Monitoring</h5>
+                        {% if latest_data %}
+                        <span class="badge bg-success" id="hardware-status">Hardware Connected</span>
+                        {% else %}
                         <span class="badge bg-secondary" id="hardware-status">Waiting for data</span>
+                        {% endif %}
                     </div>
                     
                     <div class="row" id="hardware-readings">
@@ -183,8 +187,13 @@
                                         <h6 class="card-title">Voltage</h6>
                                         <span data-feather="activity"></span>
                                     </div>
+                                    {% if latest_data and latest_data.voltage %}
+                                    <h3 class="mb-0 {% if latest_data.alert_level == 'critical' %}text-danger{% elif latest_data.alert_level == 'warning' %}text-warning{% else %}text-success{% endif %}">{{ latest_data.voltage }} V</h3>
+                                    <small class="text-muted">Last updated: {{ latest_data.timestamp.strftime('%H:%M:%S') }}</small>
+                                    {% else %}
                                     <h3 class="mb-0 text-muted">-- V</h3>
                                     <small class="text-muted">Connect hardware to monitor</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -197,8 +206,13 @@
                                         <h6 class="card-title">Current</h6>
                                         <span data-feather="zap"></span>
                                     </div>
+                                    {% if latest_data and latest_data.current %}
+                                    <h3 class="mb-0 text-primary">{{ latest_data.current }} A</h3>
+                                    <small class="text-muted">Last updated: {{ latest_data.timestamp.strftime('%H:%M:%S') }}</small>
+                                    {% else %}
                                     <h3 class="mb-0 text-muted">-- A</h3>
                                     <small class="text-muted">Connect hardware to monitor</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -211,8 +225,13 @@
                                         <h6 class="card-title">Frequency</h6>
                                         <span data-feather="repeat"></span>
                                     </div>
+                                    {% if latest_data and latest_data.frequency %}
+                                    <h3 class="mb-0 text-info">{{ latest_data.frequency }} Hz</h3>
+                                    <small class="text-muted">Last updated: {{ latest_data.timestamp.strftime('%H:%M:%S') }}</small>
+                                    {% else %}
                                     <h3 class="mb-0 text-muted">-- Hz</h3>
                                     <small class="text-muted">Connect hardware to monitor</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -225,8 +244,13 @@
                                         <h6 class="card-title">Power Factor</h6>
                                         <span data-feather="percent"></span>
                                     </div>
+                                    {% if latest_data and latest_data.power_factor %}
+                                    <h3 class="mb-0 text-secondary">{{ latest_data.power_factor }}</h3>
+                                    <small class="text-muted">Last updated: {{ latest_data.timestamp.strftime('%H:%M:%S') }}</small>
+                                    {% else %}
                                     <h3 class="mb-0 text-muted">--</h3>
                                     <small class="text-muted">Connect hardware to monitor</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
