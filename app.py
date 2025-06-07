@@ -311,10 +311,10 @@ def dashboard():
     """Render the main dashboard"""
     facility = Facility.query.first()
     
-    # Get the latest energy data from the last hour only
-    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    # Get the latest energy data from the last 60 seconds for hardware status
+    sixty_seconds_ago = datetime.utcnow() - timedelta(seconds=60)
     latest_data = EnergyData.query.filter(
-        EnergyData.timestamp >= one_hour_ago
+        EnergyData.timestamp >= sixty_seconds_ago
     ).order_by(EnergyData.timestamp.desc()).first()
     
     # Only get recommendations if we have recent data
@@ -621,10 +621,10 @@ def get_data():
 @login_required
 def get_latest_hardware_data():
     """API endpoint to get the latest hardware data including electrical parameters"""
-    # Get the latest data from the last 2 minutes only
-    two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+    # Get the latest data from the last 60 seconds only
+    sixty_seconds_ago = datetime.utcnow() - timedelta(seconds=60)
     latest_data = EnergyData.query.filter(
-        EnergyData.timestamp >= two_minutes_ago
+        EnergyData.timestamp >= sixty_seconds_ago
     ).order_by(EnergyData.timestamp.desc()).first()
     
     if not latest_data:
@@ -658,10 +658,10 @@ def get_latest_hardware_data():
 @login_required
 def check_hardware_status():
     """API endpoint to check if hardware has sent recent data"""
-    # Check if there's data from the last 2 minutes
-    two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+    # Check if there's data from the last 60 seconds
+    sixty_seconds_ago = datetime.utcnow() - timedelta(seconds=60)
     recent_data = EnergyData.query.filter(
-        EnergyData.timestamp >= two_minutes_ago
+        EnergyData.timestamp >= sixty_seconds_ago
     ).first()
     
     has_recent_data = recent_data is not None

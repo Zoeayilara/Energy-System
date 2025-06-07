@@ -533,10 +533,10 @@
         });
         
         function startAutoRefresh() {
-            // Refresh every 30 seconds
+            // Refresh every 15 seconds for faster hardware status detection
             refreshInterval = setInterval(function() {
                 refreshHardwareData();
-            }, 30000);
+            }, 15000);
         }
         
         function refreshHardwareData() {
@@ -699,7 +699,7 @@
         }
         
         function checkHardwareStatus() {
-            // Check hardware status every 45 seconds
+            // Check hardware status every 20 seconds for faster disconnection detection
             hardwareCheckInterval = setInterval(function() {
                 fetch('/api/hardware-status-check')
                     .then(response => response.json())
@@ -710,7 +710,7 @@
                         console.error('Error checking hardware status:', error);
                         updateHardwareStatus(false);
                     });
-            }, 45000);
+            }, 20000);
         }
         
         // Initial hardware status check
