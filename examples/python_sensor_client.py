@@ -13,7 +13,7 @@ import time
 import random
 from datetime import datetime
 # API Configuration
-SERVER_URL = "http://localhost:5000"  # Change to your server URL
+SERVER_URL = "http://localhost:5000"  # Change to your server URL (for ngrok use: https://your-ngrok-url.ngrok.io)
 API_KEY = "dev_hardware_key"  # Change to your API key
 # Reporting configuration
 REPORT_INTERVAL = 300  # seconds (5 minutes

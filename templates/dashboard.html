@@ -549,12 +549,18 @@
 
         function refreshHardwareData() {
             fetch('/api/latest-hardware-data')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.status === 'success' && data.data) {
                         updateHardwareDisplay(data.data);
                         updateHardwareStatus(true);
                     } else {
+                        console.log('No recent hardware data available');
                         updateHardwareStatus(false);
                     }
                 })
@@ -710,9 +716,19 @@
             // Check hardware status every 20 seconds for faster disconnection detection
             hardwareCheckInterval = setInterval(function() {
                 fetch('/api/hardware-status-check')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        updateHardwareStatus(data.has_recent_data);
+                        if (data.status === 'success') {
+                            updateHardwareStatus(data.has_recent_data);
+                        } else {
+                            console.log('Hardware status check failed:', data.message);
+                            updateHardwareStatus(false);
+                        }
                     })
                     .catch(error => {
                         console.error('Error checking hardware status:', error);

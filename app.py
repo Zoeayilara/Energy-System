@@ -726,6 +726,64 @@ def get_predictions():
 # All data comes from actual hardware connections
 
 
+@app.route('/api/debug/test-hardware', methods=['GET'])
+def debug_test_hardware():
+    """Test endpoint to simulate hardware data for debugging"""
+    if os.environ.get('FLASK_ENV') != 'production':
+        try:
+            facility = Facility.query.first()
+            if not facility:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No facility found'
+                }), 404
+
+            # Create test data
+            energy_data = EnergyData(
+                timestamp=datetime.utcnow(),
+                energy_produced=75.5,
+                energy_consumed=62.3,
+                efficiency=83.2,
+                current_load=35.8,
+                facility_id=facility.id,
+                voltage=220.5,
+                current=15.2,
+                current1=5.1,
+                current2=5.0,
+                current3=5.1,
+                frequency=50.0,
+                power_factor=0.95,
+                alert_message=None,
+                alert_level=None
+            )
+
+            db.session.add(energy_data)
+            db.session.commit()
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Test hardware data created',
+                'data': {
+                    'id': energy_data.id,
+                    'timestamp': energy_data.timestamp.isoformat(),
+                    'voltage': energy_data.voltage,
+                    'current': energy_data.current
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error creating test data: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Failed to create test data: {str(e)}'
+            }), 500
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'Debug endpoints not available in production'
+        }), 403
+
+
 @app.route('/api/debug/voltage-demo', methods=['GET'])
 def debug_voltage_demo():
     """Demonstrate real-time voltage monitoring with various conditions"""
