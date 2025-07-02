@@ -642,6 +642,9 @@ def get_latest_hardware_data():
         'current_load': latest_data.current_load,
         'voltage': latest_data.voltage,
         'current': latest_data.current,
+        'current1': latest_data.current1,
+        'current2': latest_data.current2,
+        'current3': latest_data.current3,
         'frequency': latest_data.frequency,
         'power_factor': latest_data.power_factor,
         'alert_message': latest_data.alert_message,
@@ -894,9 +897,16 @@ def receive_hardware_data():
         
         # Extract optional but important electrical parameters
         voltage = float(data.get('voltage', 0))
-        current = float(data.get('current', 0))
+        current = float(data.get('current', 0))  # Backward compatibility
+        current1 = float(data.get('current1', 0))  # Phase 1 current
+        current2 = float(data.get('current2', 0))  # Phase 2 current
+        current3 = float(data.get('current3', 0))  # Phase 3 current
         frequency = float(data.get('frequency', 0))
         power_factor = float(data.get('power_factor', 0))
+        
+        # Calculate total current if individual phase currents are provided
+        if current1 > 0 or current2 > 0 or current3 > 0:
+            current = current1 + current2 + current3
         
         # Calculate efficiency (as percentage for storage, will be converted to decimal in display)
         if energy_produced > 0:
@@ -955,6 +965,9 @@ def receive_hardware_data():
             facility_id=facility_id,
             voltage=voltage if voltage > 0 else None,
             current=current if current > 0 else None,
+            current1=current1 if current1 > 0 else None,
+            current2=current2 if current2 > 0 else None,
+            current3=current3 if current3 > 0 else None,
             frequency=frequency if frequency > 0 else None,
             power_factor=power_factor if power_factor > 0 else None,
             alert_message=alert_message,

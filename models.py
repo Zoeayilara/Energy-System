@@ -49,7 +49,10 @@ class EnergyData(db.Model):
     
     # Electrical parameters for voltage monitoring
     voltage = db.Column(db.Float, nullable=True)
-    current = db.Column(db.Float, nullable=True)
+    current = db.Column(db.Float, nullable=True)  # Keep for backward compatibility
+    current1 = db.Column(db.Float, nullable=True)  # Phase 1 current
+    current2 = db.Column(db.Float, nullable=True)  # Phase 2 current
+    current3 = db.Column(db.Float, nullable=True)  # Phase 3 current
     frequency = db.Column(db.Float, nullable=True)
     power_factor = db.Column(db.Float, nullable=True)
     
